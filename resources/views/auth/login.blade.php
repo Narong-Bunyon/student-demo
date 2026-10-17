@@ -75,6 +75,12 @@
                     <i class="bi bi-box-arrow-in-right me-1"></i> Sign In
                 </button>
             </form>
+
+            <hr class="my-4">
+
+            <p class="text-center text-muted small mb-0">
+                Don't have an account? <a href="{{ route('register') }}" class="fw-semibold text-decoration-none">Register</a>
+            </p>
         </div>
     </div>
 
