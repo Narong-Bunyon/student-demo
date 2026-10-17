@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: student-demo-app:latest
+    container_name: student_demo_app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8000}:80"
+    environment:
+      APP_NAME: "${APP_NAME:-Student Management System}"
+      APP_ENV: "${APP_ENV:-production}"
+      APP_DEBUG: "${APP_DEBUG:-false}"
+      APP_URL: "${APP_URL:-http://localhost:8000}"
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: "${DB_DATABASE:-student_demo}"
+      DB_USERNAME: "${DB_USERNAME:-student_user}"
+      DB_PASSWORD: "${DB_PASSWORD:-student_secret}"
+      SESSION_DRIVER: database
+      SESSION_LIFETIME: 120
+      CACHE_DRIVER: file
+      QUEUE_CONNECTION: sync
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - student_demo_network
+
+  mysql:
+    image: mysql:8.0
+    container_name: student_demo_mysql
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-root_secret}"
+      MYSQL_DATABASE: "${DB_DATABASE:-student_demo}"
+      MYSQL_USER: "${DB_USERNAME:-student_user}"
+      MYSQL_PASSWORD: "${DB_PASSWORD:-student_secret}"
+    ports:
+      - "${FORWARD_DB_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-root_secret}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks:
+      - student_demo_network
+
+networks:
+  student_demo_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
