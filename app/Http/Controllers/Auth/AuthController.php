@@ -80,7 +80,10 @@ class AuthController extends Controller
         if (Auth::guard('student')->check()) {
             return redirect()->route('student.portal');
         }
-        return view('auth.register');
+
+        $courses = \App\Models\Course::orderBy('name')->get();
+
+        return view('auth.register', compact('courses'));
     }
 
     /**
@@ -92,20 +95,38 @@ class AuthController extends Controller
             'first_name' => ['required', 'string', 'max:50'],
             'last_name'  => ['required', 'string', 'max:50'],
             'email'      => ['required', 'email', 'max:255', 'unique:students,email'],
+            'course_id'  => ['nullable', 'exists:courses,id'],
             'password'   => ['required', 'confirmed', 'min:8'],
         ]);
 
-        Student::create([
-            'first_name' => $validated['first_name'],
-            'last_name'  => $validated['last_name'],
-            'email'      => $validated['email'],
-            'password'   => Hash::make($validated['password']),
+        // Auto-assign default course if not selected
+        $courseId = $validated['course_id'] ?? \App\Models\Course::value('id');
+
+        // Generate a unique student code: e.g. STU-2026-XXXX
+        $year = date('Y');
+        $lastStudentId = (int) Student::max('id') + 1;
+        $studentCode = sprintf('STU-%s-%04d', $year, $lastStudentId);
+
+        // Ensure uniqueness
+        while (Student::where('student_code', $studentCode)->exists()) {
+            $lastStudentId++;
+            $studentCode = sprintf('STU-%s-%04d', $year, $lastStudentId);
+        }
+
+        $student = Student::create([
+            'student_code' => $studentCode,
+            'first_name'   => $validated['first_name'],
+            'last_name'    => $validated['last_name'],
+            'email'        => $validated['email'],
+            'password'     => Hash::make($validated['password']),
+            'course_id'    => $courseId,
+            'status'       => 'active',
+            'role'         => 'student',
         ]);
 
-        Auth::guard('student')->attempt([
-            'email'    => $validated['email'],
-            'password' => $validated['password'],
-        ]);
+        Auth::guard('student')->login($student);
+
+        $request->session()->regenerate();
 
         return redirect()->intended(route('student.portal'))
             ->with('success', 'Welcome, ' . $validated['first_name'] . '!');

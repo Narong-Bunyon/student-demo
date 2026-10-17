@@ -70,6 +70,24 @@
                     </div>
                 </div>
 
+                <!-- Course / Program Selection -->
+                @if(isset($courses) && $courses->count() > 0)
+                <div class="mb-3">
+                    <label for="course_id" class="form-label small fw-semibold text-secondary">Course / Program</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-book"></i></span>
+                        <select class="form-select border-start-0 @error('course_id') is-invalid @enderror" id="course_id" name="course_id" required>
+                            <option value="" disabled {{ old('course_id') ? '' : 'selected' }}>Select your academic program</option>
+                            @foreach($courses as $course)
+                                <option value="{{ $course->id }}" {{ old('course_id') == $course->id ? 'selected' : '' }}>
+                                    {{ $course->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                @endif
+
                 <!-- Password -->
                 <div class="mb-3">
                     <label for="password" class="form-label small fw-semibold text-secondary">Password</label>
